@@ -1,1 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NWS Report Generator</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1f1f1f;
+            --accent-color: #00adb5;
+            --text-color: #eeeeee;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 15px; padding-bottom: 40px; }
+        h2 { margin-bottom: 20px; font-size: 1.4rem; color: var(--accent-color); text-align: center; }
+        .section { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        .section-title { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .full-width { grid-column: span 2; }
+        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+        label { font-size: 0.85rem; margin-bottom: 4px; color: var(--text-muted); }
+        input, select, textarea { background: #262626 !important; border: 1px solid var(--border-color); color: #fff !important; padding: 10px; border-radius: 6px; font-size: 1rem; width: 100%; outline: none; }
+        input[type="date"], input[type="time"] { color-scheme: dark; background: #262626 !important; color: #ffffff !important; min-height: 43px; }
+        input:focus, select:focus { border-color: var(--accent-color); }
+        .time-row { display: flex; gap: 8px; width: 100%; }
+        .time-row input[type="date"] { flex: 2; }
+        .time-row input[type="time"] { flex: 1; }
+        button { background: var(--accent-color); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; width: 100%; margin-top: 15px; cursor: pointer; }
+        button:active { background: #008c94; }
+        textarea { font-family: monospace; font-size: 0.9rem; height: 180px; resize: none; background: #050505 !important; }
+    </style>
+</head>
+<body>
+
+    <h2>DEL MONTE VALIANT — Position Report</h2>
+
+    <div class="section">
+        <div class="section-title">Основное</div>
+        <div class="form-group">
+            <label>Дата рапорта</label>
+            <input type="date" id="repDate">
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Тайминг и Следующий порт</div>
+        <div class="grid">
+            <div class="form-group">
+                <label>Следующий порт</label>
+                <input type="text" id="nextPort" value="PUERTO QUETZAL">
+            </div>
+            <div class="form-group">
+                <label>Разница во времени (Зона)</label>
+                <select id="timeZone">
+                    <option value="0">GMT / UTC</option>
+                    <option value="-1">-01:00</option>
+                    <option value="-2">-02:00</option>
+                    <option value="-3">-03:00</option>
+                    <option value="-4">-04:00</option>
+                    <option value="-5">-05:00</option>
+                    <option value="-6" selected>-06:00 (Costa Rica / Quetzal)</option>
+                    <option value="-7">-07:00</option>
+                    <option value="-8">-08:00</option>
+                </select>
+            </div>
+            <div class="form-group full-width">
+                <label>ETA Местное время (LT) — <span style="color:var(--accent-color)">Округлите минуты до кратных 6!</span></label>
+                <div class="time-row">
+                    <input type="date" id="etaDate">
+                    <input type="time" id="etaTime" value="23:06">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Навигация и Авторасчет</div>
+        <div class="grid">
+            <div class="form-group">
+                <label>Широта (Lat)</label>
+                <input type="text" id="lat" value="0444N">
+            </div>
+            <div class="form-group">
+                <label>Долгота (Long)</label>
+                <input type="text" id="lon" value="08338W">
+            </div>
+            <div class="form-group">
+                <label>Пройдено за сутки (M)</label>
+                <input type="number" id="distSailed" value="470">
+            </div>
+            <div class="form-group">
+                <label>Осталось пройти (M)</label>
+                <input type="number" id="distGo" value="319">
+            </div>
+            <div class="form-group">
+                <label>Текущая скорость (Kn)</label>
+                <input type="number" step="0.1" id="speed" value="16.7">
+            </div>
+            <div class="form-group">
+                <label>Обороты (RPM)</label>
+                <input type="number" step="0.1" id="rpm" value="87.5">
+            </div>
+            <div class="form-group full-width">
+                <label style="color: var(--accent-color); font-weight: bold;">Часов в пути за эти сутки</label>
+                <input type="number" id="hoursInRoute" value="24" step="1">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Топливо и Осадка</div>
+        <div class="grid">
+            <div class="form-group full-width">
+                <label>Расход за 24ч (VLSFO ME/AE)</label>
+                <input type="text" id="cons24" value="41.1/0.0/11.7">
+            </div>
+            <div class="form-group">
+                <label>Осадка носом (M)</label>
+                <input type="number" step="0.01" id="draftFore" value="6.81">
+            </div>
+            <div class="form-group">
+                <label>Осадка кормой (M)</label>
+                <input type="number" step="0.01" id="draftAft" value="8.68">
+            </div>
+            <div class="form-group full-width">
+                <label>Остаток на борту (ROB VLSFO/MGO)</label>
+                <input type="text" id="rob" value="542.1/0.0/88.8">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Погода и Генераторы</div>
+        <div class="grid">
+            <div class="form-group">
+                <label>Ветер (Бофорт/Часы 1-24)</label>
+                <input type="text" id="weather" value="4/6">
+            </div>
+            <div class="form-group">
+                <label>Высота волны (M)</label>
+                <input type="number" step="0.1" id="sea" value="1.5">
+            </div>
+            <div class="form-group full-width">
+                <label>Работающие ДГ / Нагрузка kW</label>
+                <input type="text" id="dg" value="AE1/900 AE3/1300">
+            </div>
+        </div>
+    </div>
+
+    <button onclick="generateReport()">Сгенерировать рапорт</button>
+
+    <div class="section" style="margin-top: 20px; display: none;" id="resultSection">
+        <div class="section-title">Готовый текст рапорта</div>
+        <textarea id="outputText" readonly></textarea>
+    </div>
+
+    <script>
+        document.getElementById('repDate').valueAsDate = new Date();
+        document.getElementById('etaDate').valueAsDate = new Date();
+
+        function generateReport() {
+            const rDate = new Date(document.getElementById('repDate').value);
+            const mm = String(rDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(rDate.getDate()).padStart(2, '0');
+
+            const etaDateVal = document.getElementById('etaDate').value;
+            const etaTimeVal = document.getElementById('etaTime').value;
+            const [etaH, etaM] = etaTimeVal.split(':');
+            const tzOffset = parseInt(document.getElementById('timeZone').value);
+
+            let localEtaTime = new Date(`${etaDateVal}T${etaH}:${etaM}:00`);
+            let gmtEtaTime = new Date(localEtaTime.getTime() - (tzOffset * 60 * 60 * 1000));
+
+            const etaMM = String(localEtaTime.getMonth() + 1).padStart(2, '0');
+            const etaDD = String(localEtaTime.getDate()).padStart(2, '0');
+            const etaZMM = String(gmtEtaTime.getUTCMonth() + 1).padStart(2, '0');
+            const etaZDD = String(gmtEtaTime.getUTCDate()).padStart(2, '0');
+            const etaZH = String(gmtEtaTime.getUTCHours()).padStart(2, '0');
+            const etaZM = String(gmtEtaTime.getUTCMinutes()).padStart(2, '0');
+
+            const nextPort = document.getElementById('nextPort').value.toUpperCase();
+
+            const distSailed = parseFloat(document.getElementById('distSailed').value) || 0;
+            const hours = parseFloat(document.getElementById('hoursInRoute').value) || 24;
+            const rpm = parseFloat(document.getElementById('rpm').value) || 0;
+            
+            const calculatedAvgSpeed = (distSailed / hours).toFixed(1);
+
+            const propellerPitch = 6.82; 
+            const engineDistance = (rpm * 60 * hours * propellerPitch) / 1852;
+            let calculatedSlip = 0;
+            if (engineDistance > 0) {
+                calculatedSlip = (((engineDistance - distSailed) / engineDistance) * 100).toFixed(1);
+            }
+
+            let report = `DEL MONTE VALIANT PR\n`;
+            report += `a/ ${dd}${mm}/1200LT (${dd}${mm}/1800Z)\n`;
+            report += `b/ ${document.getElementById('lat').value.toUpperCase()} ${document.getElementById('lon').value.toUpperCase()}\n`;
+            report += `c/ ${nextPort} ${etaDD}${etaMM}/${etaH}${etaM}LT (${etaZDD}${etaZMM}/${etaZH}${etaZM}Z)\n`;
+            report += `d/ ${distSailed}NM\n`;
 
